@@ -1,2 +1,2 @@
 .\build.bat
-.\hello.exe
+.\sftn.exe

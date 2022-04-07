@@ -1,0 +1,4 @@
+palettes, lightest to darkest, in hex
+text is 0 and 2
+church palette = CBF1F5, 445975, 0E0F21, 050314
+clearing palette = EBE08D, 8A7236, 3D2D17, 1A1025

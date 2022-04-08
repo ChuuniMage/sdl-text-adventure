@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <SDL.h>
 #include <windows.h>
-#include "my_utils.cpp"
+#include "my_utils.h"
 #include <string.h>
 
 #define RedOf(hexRGB888) ((hexRGB888 >> 16) & 255)
@@ -17,6 +17,8 @@
 #define MAXIMUM_TOKEN_SIZE 16
 #define NUMBER_OF_ROOMS 2
 #define MAX_NUMBER_OF_ITEMS_IN_ROOM 16
+#define MAX_NAME_LENGTH 16
+#define MAX_NUMBER_OF_ITEMS 16
 
 const int NATIVE_WIDTH = 320;
 const int NATIVE_HEIGHT = 200;
@@ -24,84 +26,31 @@ const int FPS = 60;
 const int frameDuration = 1000 / FPS;
 
 inline int char_to_index(char input){
+    if(input >= 'A' && input <= 'Z'){
+        return input - 'A';
+    };
+    if(input >= '0' && input <= '9'){
+        return 26 + input - '0';
+    };
+    if(input >= 'a' && input <= 'z'){
+        return 36 + input - 'a';
+    };
     switch(input){
-        case 'A': return 0;
-        case 'B': return 1;
-        case 'C': return 2;
-        case 'D': return 3;
-        case 'E': return 4;
-        case 'F': return 5;
-        case 'G': return 6;
-        case 'H': return 7;
-        case 'I': return 8;
-        case 'J': return 9;
-        case 'K': return 10;
-        case 'L': return 11;
-        case 'M': return 12;
-        case 'N': return 13;
-        case 'O': return 14;
-        case 'P': return 15;
-        case 'Q': return 16;
-        case 'R': return 17;
-        case 'S': return 18;
-        case 'T': return 19;
-        case 'U': return 20;
-        case 'V': return 21;
-        case 'W': return 22;
-        case 'X': return 23;
-        case 'Y': return 24;
-        case 'Z': return 25;
-        case ' ': return 26;
-        case '0': return 27;
-        case '1': return 28;
-        case '2': return 29;
-        case '3': return 30;
-        case '4': return 31;
-        case '5': return 32;
-        case '6': return 33;
-        case '7': return 34;
-        case '8': return 35;
-        case '9': return 36;
-        case '+': return 37;
-        case '?': return 38;
-        case '!': return 39;
-        case ',': return 40;
-        case '.': return 41;
-        case '\'': return 42;
-        case 'a': return 43;
-        case 'b': return 44;
-        case 'c': return 45;
-        case 'd': return 46;
-        case 'e': return 47;
-        case 'f': return 48;
-        case 'g': return 49;
-        case 'h': return 50;
-        case 'i': return 51;
-        case 'j': return 52;
-        case 'k': return 53;
-        case 'l': return 54;
-        case 'm': return 55;
-        case 'n': return 56;
-        case 'o': return 57;
-        case 'p': return 58;
-        case 'q': return 59;
-        case 'r': return 60;
-        case 's': return 61;
-        case 't': return 62;
-        case 'u': return 63;
-        case 'v': return 64;
-        case 'w': return 65;
-        case 'x': return 66;
-        case 'y': return 67;
-        case 'z': return 68;
+        case ' ':return 62;
+        case '+': return 63;
+        case '?': return 64;
+        case '!': return 65;
+        case ',': return 66;
+        case '.': return 67;
+        case '\'': return 68;
         default: return -1;
     };
 };
 
 struct TextBufferData {
+    uint8_t elems_in_charBuffer = 0;
     char charBuffer[LENGTH_OF_CHAR_BUFFER_ARRAY] = {0};
     char tokenBuffer[LENGTH_OF_TOKEN_ARRAY][MAXIMUM_TOKEN_SIZE] = {0};
-    uint8_t elems_in_charBuffer = 0;
 };
 
 void tokenize( TextBufferData* t) {
@@ -120,7 +69,7 @@ void tokenize( TextBufferData* t) {
                 detected_string[j] = t->charBuffer[j + word_start_index];
                 new_word_start_index = new_word_start_index + 1;
             }
-            memcpy(t->tokenBuffer[new_token_index], detected_string, sizeof(t->tokenBuffer[new_token_index]));
+            strcpy_s(t->tokenBuffer[new_token_index], detected_string);
             new_token_index = new_token_index + 1;
             word_start_index = new_word_start_index + 1;
         };
@@ -128,34 +77,29 @@ void tokenize( TextBufferData* t) {
 };
 
 void load_quill(SDL_Surface* quillArray[4]){
-    char current_char[2] = "1";
-    for (int i = 0; i < 4; i++, current_char[0]++){
+    for (int i = 0; i < 4; i++){
         char temp_directory[64] = {0};
-        strcat(strcat(strcat(temp_directory, "assets/quill/quill_"), current_char), ".bmp");
+        sprintf(temp_directory, "assets/quill/quill_%c.bmp", '1' + i);
         quillArray[i] = SDL_LoadBMP(temp_directory);
     };
 };
 
 
 void load_font_files(SDL_Surface* array[LENGTH_OF_FONT_SURFACE_ARRAY]){
-    char current_char[2] = "A";
-    
-    for(int i = 0; i <= 25; i++, current_char[0]++){
+    for(int i = 0; i <= 25; i++){
         char temp_directory[64] = {0};
-        strcat(strcat(strcat(temp_directory, "assets/font/cap_"), current_char), ".bmp");
-        array[char_to_index(current_char[0])] = SDL_LoadBMP(temp_directory);
+        sprintf(temp_directory, "assets/font/cap_%c.bmp", 'A' + i);
+        array[char_to_index('A' + i)] = SDL_LoadBMP(temp_directory);
     };
-    current_char[0] = 'a';
-    for(int i = 0; i <= 25; i++, current_char[0]++){
+    for(int i = 0; i <= 25; i++){
         char temp_directory[64] = {0};
-        strcat(strcat(strcat(temp_directory, "assets/font/low_"), current_char), ".bmp");
-        array[char_to_index(current_char[0])] = SDL_LoadBMP(temp_directory);
+        sprintf(temp_directory, "assets/font/low_%c.bmp", 'a' + i);
+        array[char_to_index('a' + i)] = SDL_LoadBMP(temp_directory);
     };
-    current_char[0] = '0';
-    for(int i = 0; i <= 9; i++, current_char[0]++){
+    for(int i = 0; i <= 9; i++){
         char temp_directory[64] = {0};
-        strcat(strcat(strcat(temp_directory, "assets/font/"), current_char), ".bmp");
-        array[char_to_index(current_char[0])] = SDL_LoadBMP(temp_directory);
+        sprintf(temp_directory, "assets/font/%c.bmp", '0' + i);
+        array[char_to_index('0' + i)] = SDL_LoadBMP(temp_directory);
     };
     array[char_to_index(' ')] = SDL_LoadBMP("assets/font/space.bmp");
     array[char_to_index('+')] = SDL_LoadBMP("assets/font/+.bmp");
@@ -190,7 +134,7 @@ void blit_text(TextAnimationGlobals* pl, char* string_to_blit, int YPosition, in
     };
 };
 
-struct menu_state {
+struct MenuState {
     char* res_option_str[5] = {"1\0", "2\0", "3\0", "4\0", "5\0"};
     int res_option_index = 0; int prev_res_option_index = 0;
     char* option_string[3] = {"  WINDOW SCALE X", "  SAVE", "  QUIT"};
@@ -226,7 +170,8 @@ enum ValidCommand {
     Save_Command,
     Go_command,
     Look_command,
-    Take_command
+    Take_command,
+    Place_command
 };
 
 enum GameMode {
@@ -241,6 +186,8 @@ ValidCommand parse_token(char* str) {
     if (!strcmp(str, "GO")) return Go_command;
     if (!strcmp(str, "LOOK")) return Look_command;
     if (!strcmp(str, "TAKE")) return Take_command;
+    if (!strcmp(str, "INVENTORY")) return Take_command;
+    if (!strcmp(str, "PLACE")) return Place_command;
     return Invalid_Command;
 };
 
@@ -285,7 +232,7 @@ void handle_default_mode_event(SDL_Event* event, TextBufferData* t, GameMode* ga
 };
 
 
-void handle_menu_mode_event(SDL_Event* event, SDL_Window* window, SDL_Surface* render_surface, GameMode* game_mode, menu_state* MenuState){
+void handle_menu_mode_event(SDL_Event* event, SDL_Window* window, SDL_Surface* render_surface, GameMode* game_mode, MenuState* MenuState){
     if(event->type != SDL_KEYDOWN){return;};
     if(event->key.keysym.sym == SDLK_UP){
         if (MenuState->selected_option_index == 0){return;}
@@ -327,9 +274,9 @@ void handle_menu_mode_event(SDL_Event* event, SDL_Window* window, SDL_Surface* r
     };
 };
 
-void render_menu(TextAnimationGlobals* pl, menu_state* MenuState ){
+void render_menu(TextAnimationGlobals* pl, MenuState* MenuState ){
     for(int Y = 0; Y < 10; Y++){
-        blit_tile(pl->font_surface_array[26],24,pl->working_surface, pl->font_surface_array[26]->clip_rect.h* Y, 0);
+        blit_tile(pl->font_surface_array[char_to_index(' ')],24,pl->working_surface, pl->font_surface_array[char_to_index(' ')]->clip_rect.h* Y, 0);
     };
     char resolutionMessage[24] = {0};
     strcat(resolutionMessage, MenuState->option_string[0]);
@@ -342,22 +289,56 @@ void render_menu(TextAnimationGlobals* pl, menu_state* MenuState ){
         pl->font_surface_array[0]->clip_rect.w);
 };
 
+
+
+enum RoomEnumIndex {
+    _r_None = -1,
+    _r_Church ,
+    _r_Clearing
+};
+
 struct SaveData {// Initialised with new game state
     int res_index = 0;
     int room_index = 0;
 };
 
-struct RoomItemData {
-    char item_names[16][16] = {0};
-    char item_descriptions[16][5][LENGTH_OF_CHAR_BUFFER_ARRAY] = {0};
-    int description_line_count[16] = {0};
-    bool is_takeable_item[16] = {0};
-    bool is_item_taken[16] = {};
+struct PlaceEvent {
+    RoomEnumIndex room_index;
+    int item_to_place_index;
+    int target_placing_spot_index;
+    char placing_dialogue[5][LENGTH_OF_CHAR_BUFFER_ARRAY];
 };
 
-enum RoomEnumIndex {
-    _r_Church = 0,
-    _r_Clearing
+struct ItemRoomLocation {
+    RoomEnumIndex room;
+    int item_slot;
+};
+struct RoomItemData {
+    int current_number_of_items = 0;
+    char item_names[MAX_NUMBER_OF_ITEMS][MAX_NAME_LENGTH] = {0};
+    char item_descriptions[MAX_NUMBER_OF_ITEMS][5][LENGTH_OF_CHAR_BUFFER_ARRAY] = {0};
+    int description_line_count[MAX_NUMBER_OF_ITEMS] = {0};
+    bool is_takeable_item[MAX_NUMBER_OF_ITEMS] = {0};
+    bool is_item_taken[MAX_NUMBER_OF_ITEMS] = {0};
+    ItemRoomLocation index_within_room[MAX_NUMBER_OF_ITEMS];
+    bool has_sprite[MAX_NUMBER_OF_ITEMS];
+    int number_of_items_in_room[NUMBER_OF_ROOMS];
+    void (*take_events[MAX_NUMBER_OF_ITEMS])(RoomItemData*, int, int);
+    void (*place_events[MAX_NUMBER_OF_ITEMS])(RoomItemData*, int, int);
+};
+
+#define MAX_ITEMS_IN_INVENTORY 16
+
+struct PlayerInventory {
+    int item_index[MAX_ITEMS_IN_INVENTORY];
+    int number_of_items_held = 0;
+};
+
+//Provisional way: Save all events, play them back on load.
+
+enum ItemStatus {
+    _i_InRoom,
+    _i_InInventory
 };
 
 int room_name_to_index(char* maybe_name){
@@ -368,26 +349,31 @@ int room_name_to_index(char* maybe_name){
 
 void load_game_rooms(
     char* room_names[2], SDL_Surface* room_backgrounds[NUMBER_OF_ROOMS], 
-    RoomItemData room_item_data[NUMBER_OF_ROOMS], SDL_Surface* room_item_surfaces[NUMBER_OF_ROOMS][16]) {
+    RoomItemData room_item_data, SDL_Surface* room_item_surfaces[NUMBER_OF_ROOMS][16]) {
     for(int i = 0; i < 2; i++){
         char temp_directory[64] = {0};
-        strcat(strcat(strcat(temp_directory, "assets/"), room_names[i]), ".bmp");
-        char* current_name = room_names[i];
+        sprintf(temp_directory, "assets/%s.bmp", room_names[i]);
         int index = room_name_to_index(room_names[i]);
         CRASH_IF_FALSE(index >= 0, "Invalid room name");
         room_backgrounds[index] = SDL_LoadBMP(temp_directory);
-        for(int j = 0; j < 16; j++){
-            if (room_item_data[i].item_names[j] == NULL || room_item_data[i].item_names[j] == NULL){
+        for(int j = 0; j < MAX_NUMBER_OF_ITEMS; j++){
+            if (room_item_data.has_sprite[j] == false ){
                 continue;
             };
+            RoomEnumIndex room_index = room_item_data.index_within_room[j].room;
+            // if(room_item_data.index_within_room[j].room == i){
+            //     continue;
+            // }
+            int location_in_room = room_item_data.index_within_room[j].item_slot;
             // if (!strcmp(room_item_names[i][j], "")){continue;}
             char temp_directory[64] = {0};
-            strcat(strcat(strcat(strcat(strcat(temp_directory, "assets/"), room_names[i]), "_item_"), room_item_data[i].item_names[j]),".bmp");
-            room_item_surfaces[i][j] = SDL_LoadBMP(temp_directory);
-            //TODO: When I have more items, extract into sprite position conversion function
-            if(!strcmp(room_item_data[i].item_names[j], "AXE")){
-                room_item_surfaces[i][j]->clip_rect.x = 242;
-                room_item_surfaces[i][j]->clip_rect.y = 113;
+            sprintf(temp_directory, "assets/%s_item_%s.bmp", room_names[room_index], room_item_data.item_names[j]);
+            room_item_surfaces[room_index][location_in_room] = SDL_LoadBMP(temp_directory);
+
+         
+            if(!strcmp(room_item_data.item_names[j], "AXE")){
+                room_item_surfaces[room_index][location_in_room]->clip_rect.x = 242;
+                room_item_surfaces[room_index][location_in_room]->clip_rect.y = 113;
             };
         };
         
@@ -397,12 +383,14 @@ void load_game_rooms(
 void blit_items_in_room(
     int room_index, 
     SDL_Surface* room_item_surfaces[NUMBER_OF_ROOMS][MAX_NUMBER_OF_ITEMS_IN_ROOM], 
-    bool is_item_taken[MAX_NUMBER_OF_ITEMS_IN_ROOM], 
+    RoomItemData* room_item_data, 
     SDL_Surface* working_surface){
-    for(int j = 0; j < MAX_NUMBER_OF_ITEMS_IN_ROOM; j++){
-        if(room_item_surfaces[room_index][j] == NULL){continue;}
-        if(is_item_taken[j]){continue;}
-        SDL_BlitSurface(room_item_surfaces[room_index][j], NULL, working_surface, &room_item_surfaces[room_index][j]->clip_rect);
+    for(int i = 0; i < MAX_NUMBER_OF_ITEMS; i++){
+        if(room_item_data->is_item_taken[i]){continue;}
+        int item_room_index = room_item_data->index_within_room[i].room;
+        if(item_room_index != room_index){continue;}
+        int sprite_loc_index = room_item_data->index_within_room[i].item_slot;
+        SDL_BlitSurface(room_item_surfaces[room_index][sprite_loc_index], NULL, working_surface, &room_item_surfaces[room_index][sprite_loc_index]->clip_rect);
     };
 };
 
@@ -449,6 +437,8 @@ struct AnimationArrays {
     void* temp_data[32] = {0};
 };
 
+
+
 void DoTextAnimations(AnimationArrays* arr, TextAnimationGlobals* tap){
     for(int i = 0; i < 32; i ++){
         if(arr->occupied[i] == false){continue;};
@@ -485,10 +475,10 @@ int success_item_look_animation(int duration, TextAnimationGlobals* pl, void* te
     
     char* temp_string_ptr = string_data;
     for(int i = 0; i < line_count; i++){
-        char line_to_blit[LENGTH_OF_CHAR_BUFFER_ARRAY - 1] = {0};
-        int YPosition = (NATIVE_HEIGHT) - (pl->font_surface_array[26]->clip_rect.h * (line_count - i + 1 ));
-        memcpy(line_to_blit, temp_string_ptr, (LENGTH_OF_CHAR_BUFFER_ARRAY - 1) * sizeof(char));
-        blit_tile(pl->font_surface_array[26],LENGTH_OF_CHAR_BUFFER_ARRAY + 4, pl->working_surface, YPosition, 0);
+        char line_to_blit[LENGTH_OF_CHAR_BUFFER_ARRAY] = {0};
+        int YPosition = (NATIVE_HEIGHT) - (pl->font_surface_array[char_to_index(' ')]->clip_rect.h * (line_count - i + 1 ));
+        strcpy_s(line_to_blit, temp_string_ptr);
+        blit_tile(pl->font_surface_array[char_to_index(' ')],LENGTH_OF_CHAR_BUFFER_ARRAY + 4, pl->working_surface, YPosition, 0);
         blit_text(pl, line_to_blit, YPosition, 0);
         temp_string_ptr = temp_string_ptr + LENGTH_OF_CHAR_BUFFER_ARRAY;
     };
@@ -508,9 +498,19 @@ int save_animation(int duration, TextAnimationGlobals* payload, void* _){
     return duration;
 };
 
+int no_target_place_animation(int duration, TextAnimationGlobals* payload, void* _){
+    blit_tile(payload->font_surface_array[char_to_index(' ')],34,payload->working_surface, (NATIVE_HEIGHT) - payload->font_surface_array[0]->clip_rect.h* 2, 0);
+    blit_text(payload, "What would you like to place?", (NATIVE_HEIGHT) - payload->font_surface_array[0]->clip_rect.h* 2, 0);
+    duration--;
+    if(duration == 0){
+        return -1;
+    };
+    return duration;
+}
+
 int no_target_get_animation(int duration, TextAnimationGlobals* payload, void* _){
-    blit_tile(payload->font_surface_array[26],34,payload->working_surface, (NATIVE_HEIGHT) - payload->font_surface_array[26]->clip_rect.h* 2, 0);
-    blit_text(payload, "What would you like to take?", (NATIVE_HEIGHT) - payload->font_surface_array[26]->clip_rect.h* 2, 0);
+    blit_tile(payload->font_surface_array[char_to_index(' ')],34,payload->working_surface, (NATIVE_HEIGHT) - payload->font_surface_array[0]->clip_rect.h* 2, 0);
+    blit_text(payload, "What would you like to take?", (NATIVE_HEIGHT) - payload->font_surface_array[0]->clip_rect.h* 2, 0);
     duration--;
     if(duration == 0){
         return -1;
@@ -519,8 +519,8 @@ int no_target_get_animation(int duration, TextAnimationGlobals* payload, void* _
 }
 
 int no_target_look_animation(int duration, TextAnimationGlobals* payload, void* _){
-    blit_tile(payload->font_surface_array[26],34,payload->working_surface, (NATIVE_HEIGHT) - payload->font_surface_array[26]->clip_rect.h* 2, 0);
-    blit_text(payload, "What would you like to look at?", (NATIVE_HEIGHT) - payload->font_surface_array[26]->clip_rect.h* 2, 0);
+    blit_tile(payload->font_surface_array[char_to_index(' ')],34,payload->working_surface, (NATIVE_HEIGHT) - payload->font_surface_array[0]->clip_rect.h* 2, 0);
+    blit_text(payload, "What would you like to look at?", (NATIVE_HEIGHT) - payload->font_surface_array[0]->clip_rect.h* 2, 0);
     duration--;
     if(duration == 0){
         return -1;
@@ -531,8 +531,8 @@ int no_target_look_animation(int duration, TextAnimationGlobals* payload, void* 
 int failed_item_take_animation(int duration, TextAnimationGlobals* pl, void* temp_string){
     char error_string[36] = "";
     strcat(strcat(strcat(error_string, "Cannot take the'"), (char*)temp_string), "'.");
-    blit_tile(pl->font_surface_array[26],34,pl->working_surface, (NATIVE_HEIGHT) - pl->font_surface_array[26]->clip_rect.h* 2, 0);
-    blit_text(pl, error_string, (NATIVE_HEIGHT) - pl->font_surface_array[26]->clip_rect.h* 2, 0);
+    blit_tile(pl->font_surface_array[char_to_index(' ')],34,pl->working_surface, (NATIVE_HEIGHT) - pl->font_surface_array[0]->clip_rect.h* 2, 0);
+    blit_text(pl, error_string, (NATIVE_HEIGHT) - pl->font_surface_array[0]->clip_rect.h* 2, 0);
     duration--;
     if(duration == 0){
         return -1;
@@ -543,8 +543,8 @@ int failed_item_take_animation(int duration, TextAnimationGlobals* pl, void* tem
 int failed_item_find_animation(int duration, TextAnimationGlobals* pl, void* temp_string){
     char error_string[36] = "";
     strcat(strcat(strcat(error_string, "Cannot find the'"), (char*)temp_string), "'.");
-    blit_tile(pl->font_surface_array[26],34,pl->working_surface, (NATIVE_HEIGHT) - pl->font_surface_array[26]->clip_rect.h* 2, 0);
-    blit_text(pl, error_string, (NATIVE_HEIGHT) - pl->font_surface_array[26]->clip_rect.h* 2, 0);
+    blit_tile(pl->font_surface_array[char_to_index(' ')],34,pl->working_surface, (NATIVE_HEIGHT) - pl->font_surface_array[0]->clip_rect.h* 2, 0);
+    blit_text(pl, error_string, (NATIVE_HEIGHT) - pl->font_surface_array[0]->clip_rect.h* 2, 0);
     duration--;
     if(duration == 0){
         return -1;
@@ -555,8 +555,8 @@ int failed_item_find_animation(int duration, TextAnimationGlobals* pl, void* tem
 int success_item_take_animation(int duration, TextAnimationGlobals* pl, void* temp_string){
     char error_string[36] = "";
     strcat(strcat(strcat(error_string, "You take the '"), (char*)temp_string), "'.");
-    blit_tile(pl->font_surface_array[26],34,pl->working_surface, (NATIVE_HEIGHT) - pl->font_surface_array[26]->clip_rect.h* 2, 0);
-    blit_text(pl, error_string, (NATIVE_HEIGHT) - pl->font_surface_array[26]->clip_rect.h* 2, 0);
+    blit_tile(pl->font_surface_array[char_to_index(' ')],34,pl->working_surface, (NATIVE_HEIGHT) - pl->font_surface_array[0]->clip_rect.h* 2, 0);
+    blit_text(pl, error_string, (NATIVE_HEIGHT) - pl->font_surface_array[0]->clip_rect.h* 2, 0);
     duration--;
     if(duration == 0){
         return -1;
@@ -575,7 +575,83 @@ void replace_all_palettes(SDL_Surface* fontSurfaceArray[LENGTH_OF_FONT_SURFACE_A
     };
 }
 
+//Should probably just have a big ol' hash map of items for the inventory system
+
+enum ItemEnumIndex {
+    _i_Shrine = 0,
+    _i_Axe,
+    _i_Stump
+};
+
+int item_name_to_index(char tested_string[16]){
+    if(!strcmp(tested_string,"SHRINE")){return _i_Shrine;};
+    if(!strcmp(tested_string,"AXE")){return _i_Axe;};
+    if(!strcmp(tested_string,"STUMP")){return _i_Stump;};
+    return -1;
+};
+
+void add_item(RoomItemData* room_items, 
+    char name[MAX_NAME_LENGTH], 
+    char description[5][LENGTH_OF_CHAR_BUFFER_ARRAY], 
+    int description_line_count, 
+    bool is_takeable,
+    RoomEnumIndex room_enum, bool has_sprite
+    ){
+    CRASH_IF_FALSE(room_items->current_number_of_items < MAX_NUMBER_OF_ITEMS, "Added too many items.");
+    CRASH_IF_FALSE(item_name_to_index(name) != -1, "Invalid item name.");
+
+    int i = item_name_to_index(name);
+    strcpy_s(room_items->item_names[i], name);
+    room_items->description_line_count[i] = description_line_count;
+    memcpy(room_items->item_descriptions[i],description, sizeof(room_items->item_descriptions[i]));
+    room_items->is_takeable_item[i] = is_takeable;
+
+    int index_in_room = room_items->number_of_items_in_room[room_enum];
+    room_items->index_within_room[i] = {room_enum, index_in_room};
+    room_items->number_of_items_in_room[room_enum]++;
+    room_items->has_sprite[i] = has_sprite;
+    room_items->current_number_of_items++;
+};
+
+void alter_item_description(RoomItemData* room_items, int item_index, char new_description[5][LENGTH_OF_CHAR_BUFFER_ARRAY], int new_line_count){
+    memcpy(room_items->item_descriptions[item_index],new_description, sizeof(room_items->item_descriptions[item_index]));
+    room_items->description_line_count[item_index] = new_line_count;
+};
+
+void take_axe_event(RoomItemData* room_items, int axe_index, int _){
+    char axe_description[5][LENGTH_OF_CHAR_BUFFER_ARRAY] = {
+        "It's a well-balanced axe. Much use.", 0, 0, 0,0
+    };
+    alter_item_description(room_items, axe_index, axe_description, 1);
+
+    char stump_description[5][LENGTH_OF_CHAR_BUFFER_ARRAY] = {
+        "Stump left behind from an old tree.", "Memories of childhood return.", 0, 0, 0
+    };
+    int stump_index = 2;
+    alter_item_description(room_items, 2, stump_description, 2);
+};
+
+void place_axe_event(RoomItemData* room_items, int axe_index, int stump_index){
+    char axe_description[5][LENGTH_OF_CHAR_BUFFER_ARRAY] = {
+        "The axe is stumpwise lodged.", 0, 0, 0, 0
+    };
+    char stump_description[5][LENGTH_OF_CHAR_BUFFER_ARRAY] = {
+        "The stump is axewise stuck.", 0, 0, 0, 0
+    }; 
+    alter_item_description(room_items, axe_index, axe_description, 1);
+    alter_item_description(room_items, stump_index, stump_description, 2);
+};
+
+
+
+#define MAX_EVENT_CALLBACKS
+struct TakeEvent {
+    int item_taken_index;
+    void* callbacks[MAX_EVENT_CALLBACKS];
+};
+
 int main(int argc, char* args[]){
+
     if( SDL_Init( SDL_INIT_VIDEO ) < 0 ){
         printf( "SDL could not initialize! SDL_Error: %s\n", SDL_GetError() );
         return 0;
@@ -588,7 +664,7 @@ int main(int argc, char* args[]){
 
     GameMode game_mode = _Default;
     TextBufferData text_buffer;
-    menu_state MenuState;
+    MenuState MenuState;
     int current_room_index = -1;
     uint32_t church_palette[4] = {0xCBF1F5, 0x445975, 0x0E0F21, 0x050314};
     uint32_t clearing_palette[4] = {0xEBE08D, 0x8A7236, 0x3D2D17, 0x1A1006};
@@ -596,25 +672,28 @@ int main(int argc, char* args[]){
     //^^^ initialize global stuff here ^^^
 
     //vvv Initiate game data here vvv
-    RoomItemData room_items[NUMBER_OF_ROOMS] = {0};
-    RoomItemData church_items;
-    memcpy(church_items.item_names[0], "SHRINE",16);
-    church_items.description_line_count[0] = 2;
+    PlayerInventory player_inventory;
+
+    RoomItemData room_items = {0};
     char shrine_description[5][LENGTH_OF_CHAR_BUFFER_ARRAY] = {
         "The shrine houses a burning candle,", "icons of Christ and the Saints.", 0, 0, 0
     };
-    memcpy(church_items.item_descriptions[0],shrine_description, sizeof(shrine_description));
-    room_items[_r_Church] = church_items;
+    add_item(&room_items, "SHRINE",
+        shrine_description, 2, false, _r_Church, false);
 
-    RoomItemData clearing_items;
-    memcpy(clearing_items.item_names[0], "AXE",16);
-    clearing_items.description_line_count[0] = 1;
     char axe_description[5][LENGTH_OF_CHAR_BUFFER_ARRAY] = {
         "The axe is stumpwise lodged.", 0, 0, 0, 0
     };
-    memcpy(clearing_items.item_descriptions[0],axe_description, sizeof(axe_description));
-    clearing_items.is_takeable_item[0] = true;
-    room_items[_r_Clearing] = clearing_items;
+    add_item(&room_items, "AXE", axe_description, 1, 1, _r_Clearing, true);
+    room_items.take_events[1] = take_axe_event;
+    char stump_description[5][LENGTH_OF_CHAR_BUFFER_ARRAY] = {
+        "The stump is axewise stuck.", 0, 0, 0, 0
+    }; 
+    add_item(&room_items, "STUMP", stump_description, 1, false, _r_Clearing, false);
+
+    PlaceEvent place_events[16];
+    PlaceEvent place_axe_in_stump_event;
+
     //^^^ Initiate game data here ^^^
 
     //vvv load assets here vvv
@@ -652,7 +731,7 @@ int main(int argc, char* args[]){
     SDL_Surface* working_surface = SDL_CreateRGBSurface(NULL, NATIVE_WIDTH, NATIVE_HEIGHT, 
         render_surface->format->BitsPerPixel, render_surface->format->Rmask, 
         render_surface->format->Gmask, render_surface->format->Bmask, render_surface->format->Amask);
-    //vvv setup window, render_surface, and working_surface handles here vvv
+    //^^^ setup window, render_surface, and working_surface handles here ^^^
 
     //vvv init animation data here
     TextAnimationGlobals text_animation_payload;
@@ -692,67 +771,87 @@ int main(int argc, char* args[]){
                 SDL_PushEvent(&e);
             }; break;
             case Go_command: {
-                int previous_room_index = current_room_index;
                 int new_index = room_name_to_index(text_buffer.tokenBuffer[1]);
                 if (new_index == -1){break;}
+                int previous_room_index = current_room_index;
                 current_room_index = new_index;
                 replace_all_palettes(fontSurfaceArray,quillArray, room_palettes, previous_room_index, new_index);
             }; break;
             case Look_command:{
-                if(!strcmp(text_buffer.tokenBuffer[1], "")){
+                if(strcmp(text_buffer.tokenBuffer[1], "") == 0){
                     AddTextAnimation(&animation_arrays, no_target_look_animation, 240, NULL);
                     break;
                 };
-                bool item_found = false;
-                void* temp_description_data;
-                for (int i = 0; i < 16; i++){
-                    if (strcmp(text_buffer.tokenBuffer[1], room_items[current_room_index].item_names[i]) != 0){
-                        continue;
-                    };
-                    if(room_items[current_room_index].is_item_taken[i]){
-                        break;
-                    };
-                    int description_size = sizeof(room_items[current_room_index].item_descriptions[0]);
 
-                    temp_description_data = malloc(sizeof(int) + description_size);
-                    memcpy(temp_description_data, &room_items[current_room_index].description_line_count[i], sizeof(int));
-                    memcpy((char*)temp_description_data + sizeof(int), room_items[current_room_index].item_descriptions[i], description_size);
-                    AddTextAnimation(&animation_arrays, success_item_look_animation, 240, temp_description_data);
-                    item_found = true;
-                    break;
-                };
-                if(!item_found){
+                int item_index = item_name_to_index(text_buffer.tokenBuffer[1]);
+                if(item_index == -1 || room_items.index_within_room[item_index].room != current_room_index){
                     void* temp_string = (char*)malloc(sizeof(text_buffer.tokenBuffer[1]));
                     memcpy(temp_string, text_buffer.tokenBuffer[1], sizeof(text_buffer.tokenBuffer[1]));
                     AddTextAnimation(&animation_arrays, failed_item_find_animation, 240, temp_string);
+                    break;
                 };
-                //get item description
+                int description_size = sizeof(room_items.item_descriptions[0]);
+
+                void* temp_description_data;
+                temp_description_data = malloc(sizeof(int) + description_size);
+                memcpy(temp_description_data, &room_items.description_line_count[item_index], sizeof(int));
+                memcpy((char*)temp_description_data + sizeof(int), room_items.item_descriptions[item_index], description_size);
+                AddTextAnimation(&animation_arrays, success_item_look_animation, 240, temp_description_data);
             };break;
             case Take_command:{
-                if(!strcmp(text_buffer.tokenBuffer[1], "")){
+                if(strcmp(text_buffer.tokenBuffer[1], "") == 0){
                     AddTextAnimation(&animation_arrays, no_target_get_animation, 240, NULL);
                     break;
                 };
-                bool item_found = false;
-                for (int i = 0; i < 16; i++){
-                    if (strcmp(text_buffer.tokenBuffer[1], room_items[current_room_index].item_names[i]) != 0){
-                        continue;
-                    };
-                    bool item_already_taken = room_items[current_room_index].is_item_taken[i];
-                    if (item_already_taken){
+                int item_index = item_name_to_index(text_buffer.tokenBuffer[1]);
+                if(item_index == -1 || room_items.index_within_room[item_index].room != current_room_index){
+                    void* temp_string = (char*)malloc(sizeof(text_buffer.tokenBuffer[1]));
+                    memcpy(temp_string, text_buffer.tokenBuffer[1], sizeof(text_buffer.tokenBuffer[1]));
+                    AddTextAnimation(&animation_arrays, failed_item_find_animation, 240, temp_string);
+                    break;
+                };
+                room_items.is_item_taken[item_index] = true;
+                room_items.index_within_room[item_index].room = _r_None;
+                room_items.number_of_items_in_room[current_room_index]--;
+                player_inventory.number_of_items_held++;
+
+                if(room_items.take_events[item_index]){          
+                    room_items.take_events[item_index](&room_items, item_index, -1);
+                };
+                void* temp_string = (char*)malloc(sizeof(text_buffer.tokenBuffer[1]));
+                memcpy(temp_string, text_buffer.tokenBuffer[1], sizeof(text_buffer.tokenBuffer[1]));
+                AddTextAnimation(&animation_arrays, success_item_take_animation, 240, temp_string);
+            };break;
+              case Place_command:{
+                if(strcmp(text_buffer.tokenBuffer[1], "") == 0){
+                    AddTextAnimation(&animation_arrays, no_target_place_animation, 240, NULL);
+                    break;
+                };
+                bool item_placed = false;
+                for (int i = 0; i < MAX_ITEMS_IN_INVENTORY; i++){
+                    int item_index = player_inventory.item_index[i];
+                    if(!room_items.is_item_taken[item_index]){continue;};
+                    if(strcmp(text_buffer.tokenBuffer[1], room_items.item_names[item_index]) != 0){continue;};
+
+
+                    if (room_items.is_item_taken[i]){
                         void* temp_string = (char*)malloc(sizeof(text_buffer.tokenBuffer[1]));
                         memcpy(temp_string, text_buffer.tokenBuffer[1], sizeof(text_buffer.tokenBuffer[1]));
                         AddTextAnimation(&animation_arrays, failed_item_find_animation, 240, temp_string);
                     };
-                    room_items[current_room_index].is_item_taken[i] = true;
+                    room_items.is_item_taken[i] = true;
+                    room_items.index_within_room[i] = {_r_None, 0};
+ 
+                    player_inventory.item_index[player_inventory.number_of_items_held] = i;
+                    player_inventory.number_of_items_held++;
 
                     void* temp_string = (char*)malloc(sizeof(text_buffer.tokenBuffer[1]));
                     memcpy(temp_string, text_buffer.tokenBuffer[1], sizeof(text_buffer.tokenBuffer[1]));
                     AddTextAnimation(&animation_arrays, success_item_take_animation, 240, temp_string);
-                    item_found = true;
+                    item_placed = true;
                     break;
                 };
-                if(!item_found){
+                if(!item_placed){
                     void* temp_string = (char*)malloc(sizeof(text_buffer.tokenBuffer[1]));
                     memcpy(temp_string, text_buffer.tokenBuffer[1], sizeof(text_buffer.tokenBuffer[1]));
                     AddTextAnimation(&animation_arrays, failed_item_find_animation, 240, temp_string);
@@ -761,15 +860,16 @@ int main(int argc, char* args[]){
             case Invalid_Command:{};break;
         };
         ZeroOut(text_buffer.tokenBuffer);
+
         blit_background(roomBackgrounds[current_room_index], working_surface);
-        blit_items_in_room(current_room_index, room_item_sprites, room_items[current_room_index].is_item_taken, working_surface);
+        blit_items_in_room(current_room_index, room_item_sprites, &room_items, working_surface);
         if (game_mode == _Menu){
             render_menu(&text_animation_payload, &MenuState);
         };
 
         if (game_mode == _Default){
             if (text_buffer.elems_in_charBuffer > 0){
-                blit_tile(fontSurfaceArray[26],LENGTH_OF_CHAR_BUFFER_ARRAY + 4, working_surface, (fontSurfaceArray[0]->clip_rect.h * -1) + NATIVE_HEIGHT, 0);
+                blit_tile(fontSurfaceArray[char_to_index(' ')],LENGTH_OF_CHAR_BUFFER_ARRAY + 4, working_surface, (fontSurfaceArray[0]->clip_rect.h * -1) + NATIVE_HEIGHT, 0);
                 blit_text(&text_animation_payload, text_buffer.charBuffer, (fontSurfaceArray[0]->clip_rect.h * -1) + NATIVE_HEIGHT, 0);
                 if(text_buffer.elems_in_charBuffer != 35){
                     animate_quill(quillArray, working_surface, text_buffer.elems_in_charBuffer);
@@ -783,6 +883,7 @@ int main(int argc, char* args[]){
         SDL_UpdateWindowSurface(window);
         int frameTime = SDL_GetTicks() - frameStart;
         if (frameDuration > frameTime){
+            // printf("newrefac \n");
             SDL_Delay(frameDuration - frameTime);
         };
     };

@@ -192,7 +192,7 @@ void blit_text(TextAnimationGlobals* pl, char* string_to_blit, int YPosition, in
     };
 };
 
-struct menu_state {
+struct MenuState {
     char* res_option_str[5] = {"1\0", "2\0", "3\0", "4\0", "5\0"};
     int res_option_index = 0; int prev_res_option_index = 0;
     char* option_string[3] = {"  WINDOW SCALE X", "  SAVE", "  QUIT"};
@@ -285,7 +285,7 @@ void handle_default_mode_event(SDL_Event* event, TextBufferData* t, GameMode* ga
 };
 
 
-void handle_menu_mode_event(SDL_Event* event, SDL_Window* window, SDL_Surface* render_surface, GameMode* game_mode, menu_state* MenuState, bool* trigger_save_animation){
+void handle_menu_mode_event(SDL_Event* event, SDL_Window* window, SDL_Surface* render_surface, GameMode* game_mode, MenuState* MenuState, bool* trigger_save_animation){
     if(event->type != SDL_KEYDOWN){return;};
 
     if(event->key.keysym.sym == SDLK_UP){
@@ -329,7 +329,7 @@ void handle_menu_mode_event(SDL_Event* event, SDL_Window* window, SDL_Surface* r
     };
 };
 
-void render_menu(TextAnimationGlobals* pl, menu_state* MenuState ){
+void render_menu(TextAnimationGlobals* pl, MenuState* MenuState ){
     for(int Y = 0; Y < 10; Y++){
         blit_tile(pl->font_surface_array[26],24,pl->working_surface, pl->font_surface_array[26]->clip_rect.h* Y, 0);
     };
@@ -546,7 +546,7 @@ int main(int argc, char* args[]){
     //Put into struct?
     TextBufferData text_buffer;
 
-    menu_state MenuState;
+    MenuState MenuState;
     int current_room_index = -1;
     uint32_t church_palette[4] = {0xCBF1F5, 0x445975, 0x0E0F21, 0x050314};
     uint32_t clearing_palette[4] = {0xEBE08D, 0x8A7236, 0x3D2D17, 0x1A1006};

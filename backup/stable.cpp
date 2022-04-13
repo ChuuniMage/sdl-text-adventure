@@ -192,7 +192,7 @@ void blit_text(TextAnimationGlobals* pl, char* string_to_blit, int YPosition, in
     };
 };
 
-struct MenuState {
+struct Menu_RenderState {
     char* res_option_str[5] = {"1\0", "2\0", "3\0", "4\0", "5\0"};
     int res_option_index = 0; int prev_res_option_index = 0;
     char* option_string[3] = {"  WINDOW SCALE X", "  SAVE", "  QUIT"};
@@ -285,7 +285,7 @@ void handle_default_mode_event(SDL_Event* event, TextBufferData* t, GameMode* ga
 };
 
 
-void handle_menu_mode_event(SDL_Event* event, SDL_Window* window, SDL_Surface* render_surface, GameMode* game_mode, MenuState* MenuState, bool* trigger_save_animation){
+void handle_menu_mode_event(SDL_Event* event, SDL_Window* window, SDL_Surface* render_surface, GameMode* game_mode, Menu_RenderState* MenuState, bool* trigger_save_animation){
     if(event->type != SDL_KEYDOWN){return;};
 
     if(event->key.keysym.sym == SDLK_UP){
@@ -329,7 +329,7 @@ void handle_menu_mode_event(SDL_Event* event, SDL_Window* window, SDL_Surface* r
     };
 };
 
-void render_menu(TextAnimationGlobals* pl, MenuState* MenuState ){
+void render_menu(TextAnimationGlobals* pl, Menu_RenderState* MenuState ){
     for(int Y = 0; Y < 10; Y++){
         blit_tile(pl->font_surface_array[26],24,pl->working_surface, pl->font_surface_array[26]->clip_rect.h* Y, 0);
     };
@@ -356,13 +356,13 @@ struct RoomLookData {
 };
 
 enum RoomEnumIndex {
-    _r_Church = 0,
-    _r_Clearing
+    _r_CHURCH = 0,
+    _r_CLEARING
 };
 
 int room_name_to_index(char* maybe_name){
-    if (!strcmp(maybe_name, "CHURCH")) return _r_Church;
-    if (!strcmp(maybe_name, "CLEARING")) return _r_Clearing;
+    if (!strcmp(maybe_name, "CHURCH")) return _r_CHURCH;
+    if (!strcmp(maybe_name, "CLEARING")) return _r_CLEARING;
     return -1;
 };
 
@@ -417,14 +417,14 @@ void replace_palette(SDL_Surface* target, uint32_t current_palette[4], uint32_t 
     };
 };
 
-struct AnimationArrays {
+struct Text_RenderState {
     int (*anim[32]) (int, TextAnimationGlobals*, void*) = {0};
     int duration_counts[32] = {0};
     bool occupied[32] = {0};
     void* temp_data[32] = {0};
 };
 
-void DoTextAnimations(AnimationArrays* arr, TextAnimationGlobals* tap){
+void DoTextAnimations(Text_RenderState* arr, TextAnimationGlobals* tap){
     for(int i = 0; i < 32; i ++){
         if(arr->occupied[i] == false){continue;};
         int new_count = arr->anim[i](arr->duration_counts[i], tap, arr->temp_data[i]);
@@ -438,7 +438,7 @@ void DoTextAnimations(AnimationArrays* arr, TextAnimationGlobals* tap){
     };
 };
 
-void AddTextAnimation(AnimationArrays*arr, int (*anim) (int, TextAnimationGlobals*, void*), int duration, void* temp_data){
+void AddTextAnimation(Text_RenderState*arr, int (*anim) (int, TextAnimationGlobals*, void*), int duration, void* temp_data){
     for(int i = 0; i < 32; i++){
         if(arr->occupied[i] == FALSE){
             arr->anim[i] = anim;
@@ -546,7 +546,7 @@ int main(int argc, char* args[]){
     //Put into struct?
     TextBufferData text_buffer;
 
-    MenuState MenuState;
+    Menu_RenderState MenuState;
     int current_room_index = -1;
     uint32_t church_palette[4] = {0xCBF1F5, 0x445975, 0x0E0F21, 0x050314};
     uint32_t clearing_palette[4] = {0xEBE08D, 0x8A7236, 0x3D2D17, 0x1A1006};
@@ -560,7 +560,7 @@ int main(int argc, char* args[]){
     memcpy(shrine_description[1], "AND ICONS OF CHRIST AND THE SAINTS.", LENGTH_OF_CHAR_BUFFER_ARRAY*sizeof(char));
     memcpy(church_items.item_descriptions[0][0],shrine_description[0], LENGTH_OF_CHAR_BUFFER_ARRAY*sizeof(char));
     memcpy(church_items.item_descriptions[0][1],shrine_description[1], LENGTH_OF_CHAR_BUFFER_ARRAY*sizeof(char));
-    room_items[_r_Church] = church_items;
+    room_items[_r_CHURCH] = church_items;
 
     //^^^ initialize global stuff here ^^^
 
@@ -594,7 +594,7 @@ int main(int argc, char* args[]){
     text_animation_payload.working_surface = working_surface;
     memcpy(text_animation_payload.font_surface_array, fontSurfaceArray, sizeof(text_animation_payload.font_surface_array));
 
-    AnimationArrays animation_arrays;
+    Text_RenderState animation_arrays;
     ///^^^ init animations here
 
     bool quit = false; bool trigger_save_animation = false; bool trigger_failed_look_command = false;
